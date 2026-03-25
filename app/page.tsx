@@ -484,8 +484,6 @@ function Home() {
               </>
             )}
           </section>
-
-          {/* Compare drawer */}
         )}
 
         <footer className="vt-footer">
