@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-async function gemini(systemPrompt: string, userMessage: string, maxTokens: number): Promise<string> {
+async function geminiOnce(systemPrompt: string, userMessage: string, maxTokens: number): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
@@ -25,6 +25,20 @@ async function gemini(systemPrompt: string, userMessage: string, maxTokens: numb
 
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+}
+
+// Retry once on 503 (high demand) with a 1.5s delay
+async function gemini(systemPrompt: string, userMessage: string, maxTokens: number): Promise<string> {
+  try {
+    return await geminiOnce(systemPrompt, userMessage, maxTokens);
+  } catch (err) {
+    const msg = (err as Error).message || '';
+    if (msg.includes('503')) {
+      await new Promise(r => setTimeout(r, 1500));
+      return await geminiOnce(systemPrompt, userMessage, maxTokens);
+    }
+    throw err;
+  }
 }
 
 async function tavilySearch(query: string, topic: 'general' | 'news' = 'general'): Promise<string> {

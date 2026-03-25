@@ -56,7 +56,7 @@ export default async function OGImage() {
           borderRadius: 100,
           marginBottom: 44,
         }}>
-          <span style={{ fontSize: 16, color: '#a78bfa' }}>✦</span>
+          <span style={{ fontSize: 16, color: '#a78bfa', fontFamily: 'serif' }}>*</span>
           <span style={{
             fontSize: 13,
             fontWeight: 600,
@@ -123,7 +123,7 @@ export default async function OGImage() {
           alignItems: 'center',
           gap: 8,
         }}>
-          <span style={{ fontSize: 14, color: '#6d28d9', letterSpacing: '0.04em' }}>✦</span>
+          
           <span style={{
             fontSize: 15,
             color: '#4a4a6a',
