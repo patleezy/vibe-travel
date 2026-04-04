@@ -146,7 +146,7 @@ function Home() {
     try {
       const trip = { vibe: searchedVibe, destinations, searchedFor, savedAt: Date.now() };
       const prev = JSON.parse(localStorage.getItem('vt-saved') || '[]');
-      const updated = [trip, ...prev.filter((t) => t.vibe !== searchedVibe)];
+      const updated = [trip, ...prev.filter((t: { vibe: string }) => t.vibe !== searchedVibe)];
       localStorage.setItem('vt-saved', JSON.stringify(updated));
       setSavedTrips(updated);
       setJustSaved(true);
@@ -215,7 +215,7 @@ function Home() {
         try {
           const newTrip = { vibe: query, destinations: data.destinations || [], searchedFor: data.searchedFor || '' };
           const prev = JSON.parse(localStorage.getItem('vt-trips') || '[]');
-          const updated = [newTrip, ...prev.filter((t) => t.vibe !== query)].slice(0, 3);
+          const updated = [newTrip, ...prev.filter((t: { vibe: string }) => t.vibe !== query)].slice(0, 3);
           localStorage.setItem('vt-trips', JSON.stringify(updated));
           setPastVibes(updated);
         } catch { /* ignore */ }
