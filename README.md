@@ -7,14 +7,14 @@ AI-powered vibe-based travel discovery with real-time safety signals.
 ## How it works (agentic loop)
 
 1. **You describe a vibe** — "misty mountain village with no tourists"
-2. **Claude decides what to search** — generates specific Reddit/blog queries
+2. **Gemini decides what to search** — generates specific Reddit/blog queries
 3. **Tavily searches the live web** — hits Reddit, travel blogs, news sites in parallel
-4. **Claude synthesizes results** — cross-references safety news, curates 3-5 surprising destinations with honest safety signals
+4. **Gemini synthesizes results** — cross-references safety news, curates 3-5 surprising destinations with honest safety signals
 
 ## Tech Stack
 
 - **Next.js 14** (App Router)
-- **Anthropic API** — claude-sonnet-4 for agentic reasoning
+- **Google Gemini API** — gemini-2.5-flash for agentic reasoning
 - **Tavily API** — real-time web search
 - **Tailwind CSS** — light/dark mode
 
@@ -36,7 +36,7 @@ cp .env.example .env.local
 ```
 
 Get your keys:
-- Anthropic: https://console.anthropic.com/
+- Google AI Studio: https://aistudio.google.com/
 - Tavily: https://tavily.com/
 
 ### 3. Run locally
@@ -53,7 +53,7 @@ npm run dev
 1. Push this repo to GitHub
 2. Go to [vercel.com](https://vercel.com) → New Project → Import your repo
 3. Add environment variables in Vercel dashboard:
-   - `ANTHROPIC_API_KEY`
+   - `GEMINI_API_KEY`
    - `TAVILY_API_KEY`
 4. Deploy ✓
 
@@ -68,7 +68,7 @@ vercel --prod
 ## Security notes
 
 - API keys live only in Vercel environment variables — never exposed to the browser
-- All Anthropic + Tavily calls happen in server-side API routes (`/api/discover`)
+- All Gemini + Tavily calls happen in server-side API routes (`/api/discover`)
 - User input is capped at 500 characters and wrapped in a controlled system prompt
 - No user data is stored or logged
 
