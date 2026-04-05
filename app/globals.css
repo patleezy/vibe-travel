@@ -343,6 +343,69 @@ html:not(.dark) .vt-recent-pill {
   transition: color 0.15s ease;
 }
 .vt-saved-delete:hover { color: #f87171; }
+
+/* ── Destination tag buttons (visited / wishlist) ── */
+.vt-tag-btn {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px; border-radius: 100px;
+  border: 1px solid var(--border); background: transparent;
+  font-size: 11px; font-weight: 500; color: var(--text-dim);
+  cursor: pointer; transition: all 0.15s ease; white-space: nowrap;
+  line-height: 1.4;
+}
+.vt-tag-btn:hover { border-color: rgba(167,139,250,0.4); color: var(--text); }
+.vt-tag-btn.active-visited {
+  border-color: #4ade80; background: rgba(74,222,128,0.08); color: #4ade80;
+}
+.vt-tag-btn.active-wish {
+  border-color: #f472b6; background: rgba(244,114,182,0.08); color: #f472b6;
+}
+html:not(.dark) .vt-tag-btn.active-visited {
+  border-color: #16a34a; background: rgba(22,163,74,0.07); color: #16a34a;
+}
+html:not(.dark) .vt-tag-btn.active-wish {
+  border-color: #db2777; background: rgba(219,39,119,0.07); color: #db2777;
+}
+
+/* ── Saved trip mini-cards ── */
+.vt-saved-card {
+  width: 100%; max-width: 560px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.vt-saved-card-header {
+  display: flex; align-items: center; gap: 8px;
+}
+.vt-saved-card-vibe {
+  flex: 1; font-size: 12px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.vt-saved-card-date {
+  flex-shrink: 0; font-size: 10px; color: var(--muted);
+}
+.vt-saved-card-destinations {
+  display: flex; gap: 8px;
+  overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+}
+.vt-saved-card-destinations::-webkit-scrollbar { display: none; }
+.vt-saved-dest-preview {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-dim); flex-shrink: 0;
+}
+.vt-saved-dest-preview + .vt-saved-dest-preview::before {
+  content: '·'; color: var(--muted); margin-right: 4px;
+}
+.vt-saved-card-restore {
+  width: 100%; background: none; border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px; font-size: 11px;
+  color: var(--text-dim); cursor: pointer; transition: all 0.15s ease;
+  text-align: center;
+}
+.vt-saved-card-restore:hover {
+  border-color: rgba(167,139,250,0.4); color: var(--accent-light);
+}
+
 .vt-ghost {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 20px; background: none;

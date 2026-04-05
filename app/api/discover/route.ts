@@ -141,7 +141,7 @@ function parseJson(text: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { vibe, travelerDna } = await req.json();
+    const { vibe, travelerDna, pastVibes } = await req.json();
 
     if (!vibe || typeof vibe !== 'string' || vibe.trim().length < 3) {
       return NextResponse.json({ error: 'Please describe your vibe.' }, { status: 400 });
@@ -149,11 +149,18 @@ export async function POST(req: NextRequest) {
 
     const cleanVibe = vibe.trim().slice(0, 500);
     const cleanDna = travelerDna && typeof travelerDna === 'string' ? travelerDna.trim().slice(0, 400) : '';
+    const cleanPastVibes: string[] = Array.isArray(pastVibes)
+      ? pastVibes.filter((v: unknown) => typeof v === 'string').slice(0, 3).map((v: string) => v.trim().slice(0, 120))
+      : [];
 
     // STEP 1: Gemini plans searches
+    const pastVibesHint = cleanPastVibes.length > 0
+      ? ` The traveler has recently searched for: ${cleanPastVibes.map(v => `"${v}"`).join(', ')}. Vary the recommendations — avoid destinations that would closely match those prior searches.`
+      : '';
+
     const planPrompt = cleanDna
-      ? `You are a travel research planner. The traveler has a personal profile: "${cleanDna}". Use this to inform the search queries you choose.`
-      : `You are a travel research planner.`;
+      ? `You are a travel research planner. The traveler has a personal profile: "${cleanDna}".${pastVibesHint} Use this to inform the search queries you choose.`
+      : `You are a travel research planner.${pastVibesHint}`;
 
     const planText = await gemini(
       `${planPrompt} Given a traveler vibe, output ONLY a JSON object with search queries. No explanation, no markdown.
@@ -197,6 +204,10 @@ Rules:
       ? `\n\nTRAVELER DNA (personalize results to this profile):\n${cleanDna}`
       : '';
 
+    const pastVibesContext = cleanPastVibes.length > 0
+      ? `\n\nPAST SEARCHES (prioritize variety — avoid recommending the same destinations as these trips):\n${cleanPastVibes.map((v, i) => `${i + 1}. "${v}"`).join('\n')}`
+      : '';
+
     const synthesisSystemPrompt = `You are Vibe, an honest and surprising travel guide. Synthesize research into exactly 3 destination recommendations.
 
 Return ONLY this JSON structure, nothing else:
@@ -234,7 +245,7 @@ Rules:
 - costSignal: budget = under $80/day, mid = $80-200/day, splurge = $200+/day
 - lat/lng: approximate decimal coordinates of the destination city center (not country capital unless they are the same)`;
 
-    const synthesisUserPrompt = `Traveler vibe: "${cleanVibe}"${dnaContext}
+    const synthesisUserPrompt = `Traveler vibe: "${cleanVibe}"${dnaContext}${pastVibesContext}
 
 === DESTINATION RESEARCH ===
 ${destinationContext}
