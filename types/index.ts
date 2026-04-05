@@ -11,6 +11,9 @@ export interface Destination {
   costSignal: 'budget' | 'mid' | 'splurge';
   vibeEmoji: string;
   region: string;
+  advisoryLevel?: 1 | 2 | 3 | 4;
+  lat?: number;
+  lng?: number;
 }
 
 export interface DiscoverResponse {

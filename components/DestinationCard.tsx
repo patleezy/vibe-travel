@@ -132,6 +132,11 @@ export default function DestinationCard({ destination: d, index }: Props) {
               ⚠️ Safety Note
             </p>
             <p style={{ fontSize: 13, lineHeight: 1.55 }}>{d.safetyNote}</p>
+            {d.advisoryLevel != null && d.advisoryLevel >= 2 && (
+              <p style={{ fontSize: 11, opacity: 0.65, marginTop: 6 }}>
+                Source: US State Dept Level {d.advisoryLevel} advisory
+              </p>
+            )}
           </div>
         )}
 
