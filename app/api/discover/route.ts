@@ -1,4 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeCountry } from '@/lib/advisoryNormalize';
+import { Destination } from '@/types';
+
+// ─── Advisory cache (module-level, ~6h TTL) ─────────────────────────────────
+
+interface AdvisoryEntry {
+  advisoryLevel: number;
+  advisoryText: string;
+  url?: string;
+}
+
+let advisoryCache: { data: Record<string, AdvisoryEntry>; fetchedAt: number } | null = null;
+const ADVISORY_TTL_MS = 6 * 60 * 60 * 1000;
+
+async function fetchAdvisories(): Promise<Record<string, AdvisoryEntry>> {
+  const now = Date.now();
+  if (advisoryCache && now - advisoryCache.fetchedAt < ADVISORY_TTL_MS) {
+    return advisoryCache.data;
+  }
+  try {
+    const res = await fetch(
+      'https://travel.state.gov/content/dam/travelinformation/traveladvisories/TAsByCountry.json',
+      { next: { revalidate: 21600 } }
+    );
+    if (!res.ok) return advisoryCache?.data ?? {};
+    const data = await res.json();
+    advisoryCache = { data, fetchedAt: now };
+    return data;
+  } catch {
+    return advisoryCache?.data ?? {};
+  }
+}
+
+// ─── Climate context (Open-Meteo, free, no key) ──────────────────────────────
+
+async function fetchClimateContext(lat: number, lng: number): Promise<string> {
+  try {
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=2023-01-01&end_date=2023-12-31&monthly=temperature_2m_mean,precipitation_sum&timezone=auto`;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const temps: number[] = data.monthly?.temperature_2m_mean ?? [];
+    const rain: number[] = data.monthly?.precipitation_sum ?? [];
+    if (!temps.length || !rain.length) return '';
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const sorted = [...rain].sort((a, b) => a - b);
+    const medianRain = sorted[Math.floor(sorted.length / 2)];
+    const bestMonths = months.filter((_, i) => temps[i] !== null && rain[i] !== null && temps[i] > 18 && rain[i] < medianRain);
+    if (!bestMonths.length) return '';
+    return `Climate sweet spot: ${bestMonths.join(', ')}.`;
+  } catch {
+    return '';
+  }
+}
+
+// ─── Gemini ──────────────────────────────────────────────────────────────────
 
 async function geminiOnce(systemPrompt: string, userMessage: string, maxTokens: number): Promise<string> {
   const res = await fetch(
@@ -41,6 +98,8 @@ async function gemini(systemPrompt: string, userMessage: string, maxTokens: numb
   }
 }
 
+// ─── Tavily ──────────────────────────────────────────────────────────────────
+
 async function tavilySearch(query: string, topic: 'general' | 'news' = 'general'): Promise<string> {
   const res = await fetch('https://api.tavily.com/search', {
     method: 'POST',
@@ -65,6 +124,8 @@ async function tavilySearch(query: string, topic: 'general' | 'news' = 'general'
   return data.answer ? `Summary: ${data.answer}\n\nDetails:\n${results}` : results || 'No results';
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function parseJson(text: string) {
   const clean = text.replace(/```json|```/g, '').trim();
   try {
@@ -75,6 +136,8 @@ function parseJson(text: string) {
     throw new Error('Failed to parse JSON response');
   }
 }
+
+// ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
@@ -151,7 +214,9 @@ Return ONLY this JSON structure, nothing else:
       "safetyNote": "1 sentence on current safety or advisories",
       "costSignal": "budget",
       "vibeEmoji": "2-3 emojis",
-      "region": "e.g. Southeast Asia"
+      "region": "e.g. Southeast Asia",
+      "lat": 48.8566,
+      "lng": 2.3522
     }
   ],
   "searchedFor": "Brief description of what angle was searched"
@@ -166,7 +231,8 @@ Rules:
 - If traveler DNA is provided, filter and personalize destinations to match that profile
 - Be honest about safety - mark red/yellow if real warnings exist
 - Prioritize surprising, non-obvious choices
-- costSignal: budget = under $80/day, mid = $80-200/day, splurge = $200+/day`;
+- costSignal: budget = under $80/day, mid = $80-200/day, splurge = $200+/day
+- lat/lng: approximate decimal coordinates of the destination city center (not country capital unless they are the same)`;
 
     const synthesisUserPrompt = `Traveler vibe: "${cleanVibe}"${dnaContext}
 
@@ -181,6 +247,56 @@ Return only valid JSON with exactly 3 destinations.`;
     // STEP 3: First synthesis pass
     const synthesisText = await gemini(synthesisSystemPrompt, synthesisUserPrompt, 4000);
     let result = parseJson(synthesisText);
+
+    // STEP 3b: Apply State Dept advisory data + climate context
+    if (Array.isArray(result.destinations)) {
+      // Advisory overrides
+      const advisories = await fetchAdvisories();
+      const advisoryKeys = Object.keys(advisories).map(k => normalizeCountry(k));
+
+      result.destinations = result.destinations.map((d: Destination) => {
+        const normalized = normalizeCountry(d.country);
+        const matchIndex = advisoryKeys.findIndex(k => k === normalized);
+        if (matchIndex === -1) return d;
+
+        const matchedKey = Object.keys(advisories)[matchIndex];
+        const entry = advisories[matchedKey];
+        const level = entry.advisoryLevel as 1 | 2 | 3 | 4;
+        const levelLabel =
+          level === 1 ? 'Level 1: Exercise Normal Precautions.' :
+          level === 2 ? 'Level 2: Exercise Increased Caution.' :
+          level === 3 ? 'Level 3: Reconsider Travel.' :
+          'Level 4: Do Not Travel.';
+
+        return {
+          ...d,
+          advisoryLevel: level,
+          safetyStatus: level <= 1 ? 'green' : level === 2 ? 'yellow' : 'red',
+          safetyNote: level <= 1
+            ? `${levelLabel} ${d.safetyNote}`.trim()
+            : `${levelLabel} ${d.safetyNote}`.trim(),
+        };
+      });
+
+      // Sanitize and enrich coordinates
+      result.destinations = result.destinations.map((d: Destination) => {
+        const lat = typeof d.lat === 'number' && d.lat >= -90 && d.lat <= 90 ? d.lat : undefined;
+        const lng = typeof d.lng === 'number' && d.lng >= -180 && d.lng <= 180 ? d.lng : undefined;
+        return { ...d, lat, lng };
+      });
+
+      // Climate context (parallel, non-blocking)
+      const climateResults = await Promise.all(
+        result.destinations.map((d: Destination) =>
+          d.lat != null && d.lng != null ? fetchClimateContext(d.lat, d.lng) : Promise.resolve('')
+        )
+      );
+
+      result.destinations = result.destinations.map((d: Destination, i: number) => ({
+        ...d,
+        bestTime: climateResults[i] ? `${d.bestTime} ${climateResults[i]}` : d.bestTime,
+      }));
+    }
 
     // STEP 4: Reflection pass — check quality, retry once if needed
     try {
@@ -197,7 +313,7 @@ Return only valid JSON with exactly 3 destinations.`;
         `You are a strict travel editor reviewing AI-generated destination recommendations.
 
 Return ONLY this JSON:
-{"approved": true} 
+{"approved": true}
 
 OR if there are real problems:
 {"approved": false, "feedback": "specific criticism here"}

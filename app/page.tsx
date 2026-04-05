@@ -5,6 +5,8 @@ import ThemeToggle from '@/components/ThemeToggle';
 import DestinationCard from '@/components/DestinationCard';
 import LoadingState from '@/components/LoadingState';
 import ExportBar from '@/components/ExportBar';
+import dynamic from 'next/dynamic';
+const DestinationMap = dynamic(() => import('@/components/DestinationMap'), { ssr: false });
 import { Destination, DiscoverResponse, SavedTrip } from '@/types';
 
 const VIBE_CHIPS = [
@@ -455,6 +457,12 @@ function Home() {
                   <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginBottom: 20, fontStyle: 'italic' }}>
                     {searchedFor}
                   </p>
+                )}
+
+                {destinations.some(d => d.lat != null && d.lng != null) && (
+                  <div style={{ marginBottom: 20, borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <DestinationMap destinations={destinations} />
+                  </div>
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
