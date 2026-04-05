@@ -143,21 +143,12 @@ function Home() {
       setVisibleChips(VIBE_CHIPS_POOL.slice(0, 10));
     }
 
-    // Personalized chips: load from sessionStorage if DNA is saved
+    // Personalized chips: load from sessionStorage if previously generated
     try {
-      const dnaRaw = localStorage.getItem('vt-dna');
-      if (dnaRaw) {
-        const parsed = JSON.parse(dnaRaw);
-        const dnaString = [parsed.travelerType, parsed.alwaysSeek, parsed.ruinsTrip, parsed.extraContext]
-          .filter(Boolean).join('. ');
-        if (dnaString.trim().length > 5) {
-          const hash = btoa(dnaString).slice(0, 12);
-          const cached = sessionStorage.getItem(`vt-chips-dna-${hash}`);
-          if (cached) {
-            setPersonalizedChips(JSON.parse(cached));
-            setChipsPersonalized(true);
-          }
-        }
+      const cached = sessionStorage.getItem('vt-chips-dna');
+      if (cached) {
+        setPersonalizedChips(JSON.parse(cached));
+        setChipsPersonalized(true);
       }
     } catch { /* ignore */ }
   }, []);
@@ -193,7 +184,7 @@ function Home() {
       setDnaSaved(hasContent);
       setDnaOpen(false);
       // Clear cached personalized chips so they regenerate with new profile
-      Object.keys(sessionStorage).filter(k => k.startsWith('vt-chips-dna-')).forEach(k => sessionStorage.removeItem(k));
+      sessionStorage.removeItem('vt-chips-dna');
       setPersonalizedChips(null);
       setChipsPersonalized(false);
     } catch { /* ignore */ }
@@ -202,7 +193,6 @@ function Home() {
   const personalizeChips = async () => {
     const dnaString = buildDnaString();
     if (!dnaString.trim()) return;
-    const hash = btoa(dnaString).slice(0, 12);
     setChipsLoading(true);
     try {
       const res = await fetch('/api/chips', {
@@ -213,7 +203,7 @@ function Home() {
       if (res.ok) {
         const data = await res.json();
         if (data.chips?.length) {
-          sessionStorage.setItem(`vt-chips-dna-${hash}`, JSON.stringify(data.chips));
+          sessionStorage.setItem('vt-chips-dna', JSON.stringify(data.chips));
           setPersonalizedChips(data.chips);
           setChipsPersonalized(true);
         }
