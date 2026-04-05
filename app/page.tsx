@@ -7,7 +7,7 @@ import LoadingState from '@/components/LoadingState';
 import ExportBar from '@/components/ExportBar';
 import dynamic from 'next/dynamic';
 const DestinationMap = dynamic(() => import('@/components/DestinationMap'), { ssr: false });
-import { Destination, DiscoverResponse, SavedTrip } from '@/types';
+import { Destination, DiscoverResponse, SavedTrip, DestinationTag, DestinationTags } from '@/types';
 
 const VIBE_CHIPS_POOL = [
   { emoji: '🏔️', text: 'A quiet mountain lodge with good bourbon' },
@@ -31,6 +31,16 @@ const VIBE_CHIPS_POOL = [
   { emoji: '🍄', text: 'Deep forest with foraging trails and wooden guesthouses' },
   { emoji: '🏙️', text: 'A megacity with a neighborhood nobody talks about' },
 ];
+
+function relativeDate(ts?: number): string {
+  if (!ts) return '';
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
 const SURPRISE_VIBES = [
   'A Soviet-era spa town with thermal pools and strange murals',
@@ -84,6 +94,7 @@ function Home() {
   const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
   const [savedOpen, setSavedOpen] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [destinationTags, setDestinationTags] = useState<DestinationTags>({});
 
   // Travel DNA state
   const [dnaOpen, setDnaOpen] = useState(false);
@@ -117,6 +128,10 @@ function Home() {
     try {
       const saved = localStorage.getItem('vt-saved');
       if (saved) setSavedTrips(JSON.parse(saved));
+    } catch { /* ignore */ }
+    try {
+      const tags = localStorage.getItem('vt-tags');
+      if (tags) setDestinationTags(JSON.parse(tags));
     } catch { /* ignore */ }
 
     // Chip rotation: pick 10 random chips per session
@@ -231,6 +246,20 @@ function Home() {
     } catch { /* ignore */ }
   };
 
+  const toggleTag = (name: string, country: string, tag: DestinationTag) => {
+    const key = `${name}|${country}`;
+    setDestinationTags(prev => {
+      const updated = { ...prev };
+      if (updated[key] === tag) {
+        delete updated[key];
+      } else {
+        updated[key] = tag;
+      }
+      try { localStorage.setItem('vt-tags', JSON.stringify(updated)); } catch { /* ignore */ }
+      return updated;
+    });
+  };
+
   const deleteTrip = (vibe: string) => {
     try {
       const updated = savedTrips.filter(t => t.vibe !== vibe);
@@ -279,7 +308,11 @@ function Home() {
       const res = await fetch('/api/discover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vibe: enriched, travelerDna: dnaString || undefined }),
+        body: JSON.stringify({
+            vibe: enriched,
+            travelerDna: dnaString || undefined,
+            pastVibes: pastVibes.length > 0 ? pastVibes.map(t => t.vibe) : undefined,
+          }),
       });
       const data: DiscoverResponse = await res.json();
       if (!res.ok || data.error) {
@@ -374,16 +407,30 @@ function Home() {
                   {savedOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                 </button>
                 {savedOpen && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', alignItems: 'center', marginTop: 6 }}>
                     {savedTrips.map(trip => (
-                      <div key={trip.vibe} className="vt-saved-row" onClick={() => restoreTrip(trip)}>
-                        <span style={{ fontSize: 13 }}>✦</span>
-                        <span className="vt-saved-row-text">{trip.vibe}</span>
-                        <button
-                          className="vt-saved-delete"
-                          onClick={e => { e.stopPropagation(); deleteTrip(trip.vibe); }}
-                          title="Remove"
-                        >×</button>
+                      <div key={trip.vibe} className="vt-saved-card">
+                        <div className="vt-saved-card-header">
+                          <span className="vt-saved-card-vibe">{trip.vibe}</span>
+                          {trip.savedAt && <span className="vt-saved-card-date">{relativeDate(trip.savedAt)}</span>}
+                          <button
+                            className="vt-saved-delete"
+                            onClick={() => deleteTrip(trip.vibe)}
+                            title="Remove"
+                          >×</button>
+                        </div>
+                        {trip.destinations?.length > 0 && (
+                          <div className="vt-saved-card-destinations">
+                            {trip.destinations.map((d, i) => (
+                              <span key={i} className="vt-saved-dest-preview">
+                                {d.vibeEmoji} {d.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <button className="vt-saved-card-restore" onClick={() => restoreTrip(trip)}>
+                          Restore this trip
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -564,7 +611,7 @@ function Home() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {destinations.map((d, i) => (
-                    <DestinationCard key={`${d.name}-${i}`} destination={d} index={i} />
+                    <DestinationCard key={`${d.name}-${i}`} destination={d} index={i} tags={destinationTags} onToggleTag={toggleTag} />
                   ))}
                 </div>
 

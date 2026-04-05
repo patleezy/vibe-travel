@@ -1,5 +1,5 @@
 'use client';
-import { Destination } from '@/types';
+import { Destination, DestinationTags, DestinationTag } from '@/types';
 import { Users, Calendar, Wallet, ShieldCheck, ShieldAlert, ShieldX, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
@@ -16,12 +16,19 @@ const SAFETY_CONFIG = {
 interface Props {
   destination: Destination;
   index: number;
+  tags?: DestinationTags;
+  onToggleTag?: (name: string, country: string, tag: DestinationTag) => void;
 }
 
-export default function DestinationCard({ destination: d, index }: Props) {
+export default function DestinationCard({ destination: d, index, tags, onToggleTag }: Props) {
   const [expanded, setExpanded] = useState(false);
   const safety = SAFETY_CONFIG[d.safetyStatus] || SAFETY_CONFIG.green;
   const SafetyIcon = safety.icon;
+
+  const tagKey = `${d.name}|${d.country}`;
+  const currentTag = tags?.[tagKey];
+  const isVisited = currentTag === 'visited';
+  const isWishlisted = currentTag === 'wishlist';
 
   return (
     <article
@@ -32,7 +39,6 @@ export default function DestinationCard({ destination: d, index }: Props) {
         borderRadius: 16,
         overflow: 'hidden',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-
       }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
@@ -70,21 +76,42 @@ export default function DestinationCard({ destination: d, index }: Props) {
             <p style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 400 }}>{d.country}</p>
           </div>
 
-          {/* Safety badge */}
-          <div className={`${safety.className}`} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 12px',
-            borderRadius: 100,
-            border: '1px solid',
-            fontSize: 12,
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}>
-            <SafetyIcon size={13} />
-            {safety.label}
+          {/* Right column: tag buttons + safety badge */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+            {onToggleTag && (
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <button
+                  className={`vt-tag-btn${isVisited ? ' active-visited' : ''}`}
+                  onClick={() => onToggleTag(d.name, d.country, 'visited')}
+                  title={isVisited ? 'Remove visited' : 'Mark as visited'}
+                >
+                  ✓ {isVisited ? 'Visited' : 'Visit?'}
+                </button>
+                <button
+                  className={`vt-tag-btn${isWishlisted ? ' active-wish' : ''}`}
+                  onClick={() => onToggleTag(d.name, d.country, 'wishlist')}
+                  title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                >
+                  {isWishlisted ? '♥' : '♡'}
+                </button>
+              </div>
+            )}
+
+            {/* Safety badge */}
+            <div className={`${safety.className}`} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 100,
+              border: '1px solid',
+              fontSize: 12,
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}>
+              <SafetyIcon size={13} />
+              {safety.label}
+            </div>
           </div>
         </div>
 
@@ -167,7 +194,6 @@ export default function DestinationCard({ destination: d, index }: Props) {
             {expanded ? 'Hide' : 'Show'} safety details
           </button>
         )}
-
       </div>
     </article>
   );

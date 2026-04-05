@@ -22,6 +22,9 @@ export interface DiscoverResponse {
   error?: string;
 }
 
+export type DestinationTag = 'visited' | 'wishlist';
+export type DestinationTags = Record<string, DestinationTag>; // key = "name|country"
+
 export interface SavedTrip {
   vibe: string;
   destinations: Destination[];
