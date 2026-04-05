@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 const DestinationMap = dynamic(() => import('@/components/DestinationMap'), { ssr: false });
 import { Destination, DiscoverResponse, SavedTrip } from '@/types';
 
-const VIBE_CHIPS = [
+const VIBE_CHIPS_POOL = [
   { emoji: '🏔️', text: 'A quiet mountain lodge with good bourbon' },
   { emoji: '🌊', text: 'Rainy coastal town for writing a novel' },
   { emoji: '🍜', text: 'Neon city with incredible street food' },
@@ -20,6 +20,26 @@ const VIBE_CHIPS = [
   { emoji: '🌃', text: 'A city that parties until sunrise and sleeps until noon' },
   { emoji: '♨️', text: 'A hot spring town with no agenda and slow mornings' },
   { emoji: '🎭', text: 'Incredible arts and culture with zero hype' },
+  { emoji: '🚂', text: 'A city best reached by overnight train' },
+  { emoji: '🍷', text: 'A wine region with no famous names on the label' },
+  { emoji: '🌋', text: 'Somewhere geologically dramatic and barely visited' },
+  { emoji: '📚', text: 'A university town with cheap coffee and big ideas' },
+  { emoji: '🎵', text: 'A city with a live music scene the world hasnt found yet' },
+  { emoji: '🏜️', text: 'Silence, sand, and a sky full of stars' },
+  { emoji: '🛶', text: 'A river delta you navigate by boat' },
+  { emoji: '🧘', text: 'Somewhere to do absolutely nothing for a week' },
+  { emoji: '🎪', text: 'A city with a permanent carnival energy' },
+  { emoji: '🌿', text: 'Cloud forest where everything is damp and green and quiet' },
+  { emoji: '🏊', text: 'A thermal lake you can swim in year-round' },
+  { emoji: '🦅', text: 'Highland plateau where the wind never stops' },
+  { emoji: '🌅', text: 'A fishing village where the day starts at 4am' },
+  { emoji: '🧉', text: 'Somewhere people gather in plazas every evening just to talk' },
+  { emoji: '🏯', text: 'A walled medieval city that forgot to become a museum' },
+  { emoji: '🎨', text: 'An artists colony with cheap studios and no gallery scene yet' },
+  { emoji: '🌁', text: 'A foggy peninsula at the edge of a continent' },
+  { emoji: '🍄', text: 'Deep forest with foraging trails and wooden guesthouses' },
+  { emoji: '🌊', text: 'Clifftop village where the sea is always audible' },
+  { emoji: '🏙️', text: 'A megacity with a neighborhood nobody talks about' },
 ];
 
 const SURPRISE_VIBES = [
@@ -80,6 +100,12 @@ function Home() {
   const [dnaProfile, setDnaProfile] = useState({ travelerType: '', alwaysSeek: '', ruinsTrip: '', extraContext: '' });
   const [dnaSaved, setDnaSaved] = useState(false);
 
+  // Vibe chips — 10 shown at a time, rotating per session, personalizable
+  const [visibleChips, setVisibleChips] = useState<{ emoji: string; text: string }[]>([]);
+  const [personalizedChips, setPersonalizedChips] = useState<{ emoji: string; text: string }[] | null>(null);
+  const [chipsPersonalized, setChipsPersonalized] = useState(false);
+  const [chipsLoading, setChipsLoading] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +127,38 @@ function Home() {
     try {
       const saved = localStorage.getItem('vt-saved');
       if (saved) setSavedTrips(JSON.parse(saved));
+    } catch { /* ignore */ }
+
+    // Chip rotation: pick 10 random chips per session
+    try {
+      const sessionChips = sessionStorage.getItem('vt-chips-session');
+      if (sessionChips) {
+        setVisibleChips(JSON.parse(sessionChips));
+      } else {
+        const shuffled = [...VIBE_CHIPS_POOL].sort(() => Math.random() - 0.5).slice(0, 10);
+        sessionStorage.setItem('vt-chips-session', JSON.stringify(shuffled));
+        setVisibleChips(shuffled);
+      }
+    } catch {
+      setVisibleChips(VIBE_CHIPS_POOL.slice(0, 10));
+    }
+
+    // Personalized chips: load from sessionStorage if DNA is saved
+    try {
+      const dnaRaw = localStorage.getItem('vt-dna');
+      if (dnaRaw) {
+        const parsed = JSON.parse(dnaRaw);
+        const dnaString = [parsed.travelerType, parsed.alwaysSeek, parsed.ruinsTrip, parsed.extraContext]
+          .filter(Boolean).join('. ');
+        if (dnaString.trim().length > 5) {
+          const hash = btoa(dnaString).slice(0, 12);
+          const cached = sessionStorage.getItem(`vt-chips-dna-${hash}`);
+          if (cached) {
+            setPersonalizedChips(JSON.parse(cached));
+            setChipsPersonalized(true);
+          }
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -134,6 +192,43 @@ function Home() {
       const hasContent = Object.values(dnaProfile).some((v) => (v as string).trim());
       setDnaSaved(hasContent);
       setDnaOpen(false);
+      // Clear cached personalized chips so they regenerate with new profile
+      Object.keys(sessionStorage).filter(k => k.startsWith('vt-chips-dna-')).forEach(k => sessionStorage.removeItem(k));
+      setPersonalizedChips(null);
+      setChipsPersonalized(false);
+    } catch { /* ignore */ }
+  };
+
+  const personalizeChips = async () => {
+    const dnaString = buildDnaString();
+    if (!dnaString.trim()) return;
+    const hash = btoa(dnaString).slice(0, 12);
+    setChipsLoading(true);
+    try {
+      const res = await fetch('/api/chips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ travelerDna: dnaString }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.chips?.length) {
+          sessionStorage.setItem(`vt-chips-dna-${hash}`, JSON.stringify(data.chips));
+          setPersonalizedChips(data.chips);
+          setChipsPersonalized(true);
+        }
+      }
+    } catch { /* ignore */ }
+    setChipsLoading(false);
+  };
+
+  const reshuffleChips = () => {
+    try {
+      const shuffled = [...VIBE_CHIPS_POOL].sort(() => Math.random() - 0.5).slice(0, 10);
+      sessionStorage.setItem('vt-chips-session', JSON.stringify(shuffled));
+      setVisibleChips(shuffled);
+      setPersonalizedChips(null);
+      setChipsPersonalized(false);
     } catch { /* ignore */ }
   };
 
@@ -426,9 +521,31 @@ function Home() {
                   <Shuffle size={12} /> Surprise me
                 </button>
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="fade-up stagger-3">
-                  <p className="vt-chips-label">Or try a vibe</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <p className="vt-chips-label" style={{ margin: 0 }}>
+                      {chipsPersonalized ? '✦ For you' : 'Or try a vibe'}
+                    </p>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {dnaSaved && !chipsPersonalized && (
+                        <button
+                          onClick={personalizeChips}
+                          disabled={chipsLoading}
+                          style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', opacity: chipsLoading ? 0.6 : 1 }}
+                        >
+                          {chipsLoading ? '...' : '✦ Personalize'}
+                        </button>
+                      )}
+                      <button
+                        onClick={reshuffleChips}
+                        title="Shuffle chips"
+                        style={{ fontSize: 11, padding: '3px 8px', borderRadius: 100, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer' }}
+                      >
+                        ↺
+                      </button>
+                    </div>
+                  </div>
                   <div className="vt-chips">
-                    {VIBE_CHIPS.map(chip => (
+                    {(personalizedChips ?? visibleChips).map(chip => (
                       <button key={chip.text} className="vt-chip" onClick={() => handleChip(chip.text)}>
                         <span>{chip.emoji}</span>{chip.text}
                       </button>
