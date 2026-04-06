@@ -48,7 +48,7 @@ Rules:
           },
           contents: [{ role: 'user', parts: [{ text: `Traveler profile: "${cleanDna}"` }] }],
           generationConfig: {
-            maxOutputTokens: 600,
+            maxOutputTokens: 1200,
             temperature: 0.9,
             responseMimeType: 'application/json',
           },
@@ -63,6 +63,12 @@ Rules:
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const clean = text.replace(/```json|```/g, '').trim();
+
+    if (!clean) {
+      safeLogError('chips', new Error(`Empty Gemini response. finishReason=${data.candidates?.[0]?.finishReason ?? 'unknown'}`));
+      return NextResponse.json({ error: 'Failed to generate chips.' }, { status: 500 });
+    }
+
     const parsed = JSON.parse(clean);
 
     return NextResponse.json(parsed);
