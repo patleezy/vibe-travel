@@ -512,3 +512,201 @@ html:not(.dark) .vt-dna-trigger:hover {
   background: linear-gradient(135deg, #a78bfa, #60a5fa);
   flex-shrink: 0;
 }
+
+/* ── Hamburger button ── */
+.vt-hamburger {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s ease;
+  position: relative; flex-shrink: 0;
+  font-size: 16px;
+}
+.vt-hamburger:hover { border-color: rgba(167,139,250,0.4); color: var(--text); }
+html:not(.dark) .vt-hamburger:hover { border-color: var(--accent); }
+.vt-hamburger-badge {
+  position: absolute; top: 5px; right: 5px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg, #f472b6, #a78bfa);
+  border: 1.5px solid var(--bg-card);
+}
+
+/* ── Drawer backdrop ── */
+.vt-drawer-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: vt-fade-in 0.2s ease;
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Drawer panel ── */
+.vt-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 210;
+  width: 420px; max-width: 100vw;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+.vt-drawer.open { transform: translateX(0); }
+
+@media (max-width: 480px) {
+  .vt-drawer { width: 100vw; border-left: none; }
+}
+
+.vt-drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.vt-drawer-title {
+  font-size: 13px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.vt-drawer-close {
+  background: none; border: none;
+  color: var(--text-dim); cursor: pointer;
+  padding: 4px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.vt-drawer-close:hover { color: var(--text); background: var(--chip-bg); }
+
+.vt-drawer-stats {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--muted);
+  flex-shrink: 0;
+}
+.vt-drawer-stats-dot {
+  width: 3px; height: 3px; border-radius: 50%;
+  background: var(--muted); opacity: 0.5;
+}
+
+.vt-drawer-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.vt-drawer-tab {
+  flex: 1; padding: 12px 6px;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  font-family: 'Geist', inherit; font-size: 12px; font-weight: 500;
+  color: var(--text-dim); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  margin-bottom: -1px;
+}
+.vt-drawer-tab:hover { color: var(--text); }
+.vt-drawer-tab.active {
+  color: var(--accent-light);
+  border-bottom-color: var(--accent-light);
+}
+html:not(.dark) .vt-drawer-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.vt-drawer-content {
+  flex: 1; overflow-y: auto;
+  padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 10px;
+  scrollbar-width: thin;
+}
+
+/* ── Tag cards (wishlist + visited) ── */
+.vt-drawer-tag-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.vt-drawer-tag-card-top {
+  display: flex; align-items: center; gap: 10px;
+}
+.vt-drawer-tag-emoji { font-size: 22px; flex-shrink: 0; }
+.vt-drawer-tag-info {
+  flex: 1; display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.vt-drawer-tag-info strong {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.vt-drawer-tag-info span {
+  font-size: 11px; color: var(--text-dim);
+}
+.vt-drawer-remove {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 2px 4px;
+  border-radius: 4px; transition: color 0.15s ease; flex-shrink: 0;
+}
+.vt-drawer-remove:hover { color: #f87171; }
+
+.vt-drawer-tag-tagline {
+  font-size: 12px; font-style: italic;
+  color: var(--accent-light); line-height: 1.4;
+  padding: 0 2px;
+}
+html:not(.dark) .vt-drawer-tag-tagline { color: var(--accent); }
+
+.vt-drawer-find-similar {
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px;
+  font-family: 'Geist', inherit; font-size: 12px; font-weight: 500;
+  color: var(--text-dim); cursor: pointer; text-align: left;
+  transition: all 0.15s ease; width: 100%;
+}
+.vt-drawer-find-similar:hover {
+  border-color: rgba(167,139,250,0.4); color: var(--accent-light);
+  background: rgba(124,58,237,0.05);
+}
+html:not(.dark) .vt-drawer-find-similar:hover {
+  border-color: var(--accent); color: var(--accent);
+}
+
+.vt-drawer-where-next {
+  width: 100%; padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(37,99,235,0.12));
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 10px;
+  font-family: 'Geist', inherit; font-size: 13px; font-weight: 500;
+  color: var(--accent-light); cursor: pointer;
+  transition: all 0.2s ease; text-align: center;
+}
+.vt-drawer-where-next:hover {
+  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(37,99,235,0.2));
+  transform: translateY(-1px);
+}
+html:not(.dark) .vt-drawer-where-next { color: var(--accent); }
+
+.vt-drawer-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; padding: 40px 20px;
+  color: var(--muted); text-align: center;
+}
+.vt-drawer-empty span { font-size: 28px; }
+.vt-drawer-empty p { font-size: 13px; line-height: 1.5; margin: 0; }
+.vt-drawer-empty p:first-of-type { font-weight: 500; color: var(--text-dim); }
+
+.vt-drawer-dna-note {
+  font-size: 12px; color: var(--muted);
+  text-align: center; padding: 4px 0;
+  letter-spacing: 0.02em; line-height: 1.5;
+}

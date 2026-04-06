@@ -1,13 +1,14 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, RotateCcw, Shuffle, Dna, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { ArrowRight, RotateCcw, Shuffle } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import DestinationCard from '@/components/DestinationCard';
 import LoadingState from '@/components/LoadingState';
 import ExportBar from '@/components/ExportBar';
+import Drawer from '@/components/Drawer';
 import dynamic from 'next/dynamic';
 const DestinationMap = dynamic(() => import('@/components/DestinationMap'), { ssr: false });
-import { Destination, DiscoverResponse, SavedTrip, DestinationTag, DestinationTags } from '@/types';
+import { Destination, DiscoverResponse, SavedTrip, DestinationTag, DestinationTags, TagEntry } from '@/types';
 
 const VIBE_CHIPS_POOL = [
   { emoji: '🏔️', text: 'A quiet mountain lodge with good bourbon' },
@@ -90,14 +91,16 @@ function Home() {
 
   // Past vibes — auto-saved, last 3
   const [pastVibes, setPastVibes] = useState<SavedTrip[]>([]);
-  // Saved trips — explicit saves, persistent wishlist
+  // Saved trips — explicit saves, persistent
   const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
-  const [savedOpen, setSavedOpen] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [destinationTags, setDestinationTags] = useState<DestinationTags>({});
 
+  // Drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<'saved' | 'wishlist' | 'visited' | 'dna'>('saved');
+
   // Travel DNA state
-  const [dnaOpen, setDnaOpen] = useState(false);
   const [dnaProfile, setDnaProfile] = useState({ travelerType: '', alwaysSeek: '', ruinsTrip: '', extraContext: '' });
   const [dnaSaved, setDnaSaved] = useState(false);
 
@@ -131,7 +134,16 @@ function Home() {
     } catch { /* ignore */ }
     try {
       const tags = localStorage.getItem('vt-tags');
-      if (tags) setDestinationTags(JSON.parse(tags));
+      if (tags) {
+        const parsed = JSON.parse(tags);
+        // Migration: old format stored plain strings like "visited"/"wishlist"
+        const needsMigration = Object.values(parsed).some(v => typeof v === 'string');
+        if (needsMigration) {
+          localStorage.removeItem('vt-tags');
+        } else {
+          setDestinationTags(parsed);
+        }
+      }
     } catch { /* ignore */ }
 
     // Chip rotation: pick 10 random chips per session
@@ -187,7 +199,6 @@ function Home() {
       localStorage.setItem('vt-dna', JSON.stringify(dnaProfile));
       const hasContent = Object.values(dnaProfile).some((v) => (v as string).trim());
       setDnaSaved(hasContent);
-      setDnaOpen(false);
       // Clear cached personalized chips so they regenerate with new profile
       sessionStorage.removeItem('vt-chips-dna');
       setPersonalizedChips(null);
@@ -246,18 +257,52 @@ function Home() {
     } catch { /* ignore */ }
   };
 
-  const toggleTag = (name: string, country: string, tag: DestinationTag) => {
-    const key = `${name}|${country}`;
+  const toggleTag = (destination: Destination, tag: DestinationTag) => {
+    const key = `${destination.name}|${destination.country}`;
     setDestinationTags(prev => {
       const updated = { ...prev };
-      if (updated[key] === tag) {
+      if (updated[key]?.tag === tag) {
         delete updated[key];
       } else {
-        updated[key] = tag;
+        updated[key] = {
+          tag,
+          name: destination.name,
+          country: destination.country,
+          vibeEmoji: destination.vibeEmoji,
+          region: destination.region,
+          tagline: destination.tagline,
+        };
       }
       try { localStorage.setItem('vt-tags', JSON.stringify(updated)); } catch { /* ignore */ }
       return updated;
     });
+  };
+
+  const removeTag = (key: string) => {
+    setDestinationTags(prev => {
+      const updated = { ...prev };
+      delete updated[key];
+      try { localStorage.setItem('vt-tags', JSON.stringify(updated)); } catch { /* ignore */ }
+      return updated;
+    });
+  };
+
+  const handleFindSimilar = (entry: TagEntry) => {
+    const prompt = `Places with the same energy as ${entry.vibeEmoji} ${entry.name}, ${entry.country} — but somewhere I haven't been yet. ${entry.tagline}`;
+    setDrawerOpen(false);
+    setVibe(prompt);
+    discover(prompt);
+  };
+
+  const handleWhereNext = () => {
+    const visitedList = Object.values(destinationTags)
+      .filter(e => e.tag === 'visited')
+      .map(e => `${e.name} (${e.country})`)
+      .join(', ');
+    const prompt = `I've been to ${visitedList}. Find somewhere with a completely different energy — new region, new rhythm, new culture.`;
+    setDrawerOpen(false);
+    setVibe(prompt);
+    discover(prompt);
   };
 
   const deleteTrip = (vibe: string) => {
@@ -274,7 +319,7 @@ function Home() {
     setSearchedFor('Saved trip');
     setDestinations(trip.destinations);
     setHasSearched(true);
-    setSavedOpen(false);
+    setDrawerOpen(false);
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
@@ -305,14 +350,23 @@ function Home() {
     const dnaString = buildDnaString();
 
     try {
+      const visitedPlaces = Object.values(destinationTags)
+        .filter(e => e.tag === 'visited')
+        .map(e => `${e.name}, ${e.country}`);
+      const wishlistedPlaces = Object.values(destinationTags)
+        .filter(e => e.tag === 'wishlist')
+        .map(e => `${e.name}, ${e.country}`);
+
       const res = await fetch('/api/discover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            vibe: enriched,
-            travelerDna: dnaString || undefined,
-            pastVibes: pastVibes.length > 0 ? pastVibes.map(t => t.vibe) : undefined,
-          }),
+          vibe: enriched,
+          travelerDna: dnaString || undefined,
+          pastVibes: pastVibes.length > 0 ? pastVibes.map(t => t.vibe) : undefined,
+          visitedPlaces: visitedPlaces.length > 0 ? visitedPlaces : undefined,
+          wishlistedPlaces: wishlistedPlaces.length > 0 ? wishlistedPlaces : undefined,
+        }),
       });
       const data: DiscoverResponse = await res.json();
       if (!res.ok || data.error) {
@@ -378,6 +432,16 @@ function Home() {
               </button>
             )}
             <ThemeToggle />
+            <button
+              className="vt-hamburger"
+              onClick={() => { setDrawerTab('saved'); setDrawerOpen(true); }}
+              aria-label="Open my travel"
+            >
+              ☰
+              {(Object.keys(destinationTags).length > 0 || savedTrips.length > 0) && (
+                <span className="vt-hamburger-badge" />
+              )}
+            </button>
           </div>
         </nav>
 
@@ -398,45 +462,6 @@ function Home() {
             <p className="vt-sub fade-up stagger-2">
               Describe the trip you want to feel — not just where to go.
             </p>
-
-            {/* Saved trips — collapsible wishlist */}
-            {!hasSearched && savedTrips.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 560, marginBottom: 4 }} className="fade-up stagger-1">
-                <button className="vt-saved-toggle" onClick={() => setSavedOpen(o => !o)}>
-                  🗂 Saved trips ({savedTrips.length})
-                  {savedOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                </button>
-                {savedOpen && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', alignItems: 'center', marginTop: 6 }}>
-                    {savedTrips.map(trip => (
-                      <div key={trip.vibe} className="vt-saved-card">
-                        <div className="vt-saved-card-header">
-                          <span className="vt-saved-card-vibe">{trip.vibe}</span>
-                          {trip.savedAt && <span className="vt-saved-card-date">{relativeDate(trip.savedAt)}</span>}
-                          <button
-                            className="vt-saved-delete"
-                            onClick={() => deleteTrip(trip.vibe)}
-                            title="Remove"
-                          >×</button>
-                        </div>
-                        {trip.destinations?.length > 0 && (
-                          <div className="vt-saved-card-destinations">
-                            {trip.destinations.map((d, i) => (
-                              <span key={i} className="vt-saved-dest-preview">
-                                {d.vibeEmoji} {d.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <button className="vt-saved-card-restore" onClick={() => restoreTrip(trip)}>
-                          Restore this trip
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Past vibes — instant restore, no API call */}
             {!hasSearched && pastVibes.length > 0 && (
@@ -505,42 +530,6 @@ function Home() {
               </div>
             </div>
 
-            {/* Travel DNA toggle */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 560 }}>
-            <button
-              className={`vt-dna-trigger fade-up stagger-2${dnaSaved ? ' active' : ''}`}
-              onClick={() => setDnaOpen(o => !o)}
-            >
-              {dnaSaved && <span className="vt-dna-badge" />}
-              <Dna size={11} />
-              Your Travel DNA
-              {dnaOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-            </button>
-
-            {/* Travel DNA panel */}
-            <div className="vt-dna-panel" style={{ display: dnaOpen ? 'flex' : 'none', flexDirection: 'column' }}>
-                <div className="vt-dna-header">
-                  <Sparkles size={11} /> Travel DNA — shapes every search, silently
-                </div>
-                {DNA_FIELDS.map(field => (
-                  <input
-                    key={field.key}
-                    className="vt-dna-input"
-                    placeholder={field.placeholder}
-                    value={dnaProfile[field.key as keyof typeof dnaProfile]}
-                    onChange={e => setDnaProfile(p => ({ ...p, [field.key]: e.target.value }))}
-                  />
-                ))}
-                <div className="vt-dna-footer">
-                  <button className="vt-dna-clear" onClick={clearDna}>Clear</button>
-                  <button className="vt-dna-save" onClick={saveDna}>
-                    <Sparkles size={11} /> Save DNA
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
             {/* Surprise me + chips — only before first search */}
             {!hasSearched && (
               <>
@@ -553,13 +542,20 @@ function Home() {
                       {chipsPersonalized ? '✦ For you' : 'Or try a vibe'}
                     </p>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      {dnaSaved && !chipsPersonalized && (
+                      {!chipsPersonalized && (
                         <button
-                          onClick={personalizeChips}
+                          onClick={() => {
+                            if (dnaSaved) {
+                              personalizeChips();
+                            } else {
+                              setDrawerTab('dna');
+                              setDrawerOpen(true);
+                            }
+                          }}
                           disabled={chipsLoading}
                           style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', opacity: chipsLoading ? 0.6 : 1 }}
                         >
-                          {chipsLoading ? '...' : '✦ Personalize'}
+                          {chipsLoading ? '...' : dnaSaved ? '✦ Personalize' : '✦ Set DNA'}
                         </button>
                       )}
                       <button
@@ -646,6 +642,25 @@ function Home() {
           Real-time safety signals
         </footer>
       </main>
+
+      <Drawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        initialTab={drawerTab}
+        savedTrips={savedTrips}
+        onRestoreTrip={restoreTrip}
+        onDeleteTrip={deleteTrip}
+        destinationTags={destinationTags}
+        onRemoveTag={removeTag}
+        onFindSimilar={handleFindSimilar}
+        onWhereNext={handleWhereNext}
+        dnaProfile={dnaProfile}
+        onDnaChange={(field, value) => setDnaProfile(p => ({ ...p, [field]: value }))}
+        onSaveDna={saveDna}
+        onClearDna={clearDna}
+        dnaSaved={dnaSaved}
+        pastVibesCount={pastVibes.length}
+      />
     </>
   );
 }

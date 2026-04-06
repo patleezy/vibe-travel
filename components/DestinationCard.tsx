@@ -17,7 +17,7 @@ interface Props {
   destination: Destination;
   index: number;
   tags?: DestinationTags;
-  onToggleTag?: (name: string, country: string, tag: DestinationTag) => void;
+  onToggleTag?: (destination: Destination, tag: DestinationTag) => void;
 }
 
 export default function DestinationCard({ destination: d, index, tags, onToggleTag }: Props) {
@@ -26,9 +26,9 @@ export default function DestinationCard({ destination: d, index, tags, onToggleT
   const SafetyIcon = safety.icon;
 
   const tagKey = `${d.name}|${d.country}`;
-  const currentTag = tags?.[tagKey];
-  const isVisited = currentTag === 'visited';
-  const isWishlisted = currentTag === 'wishlist';
+  const currentEntry = tags?.[tagKey];
+  const isVisited = currentEntry?.tag === 'visited';
+  const isWishlisted = currentEntry?.tag === 'wishlist';
 
   return (
     <article
@@ -82,14 +82,14 @@ export default function DestinationCard({ destination: d, index, tags, onToggleT
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button
                   className={`vt-tag-btn${isVisited ? ' active-visited' : ''}`}
-                  onClick={() => onToggleTag(d.name, d.country, 'visited')}
+                  onClick={() => onToggleTag(d, 'visited')}
                   title={isVisited ? 'Remove visited' : 'Mark as visited'}
                 >
                   ✓ {isVisited ? 'Visited' : 'Visit?'}
                 </button>
                 <button
                   className={`vt-tag-btn${isWishlisted ? ' active-wish' : ''}`}
-                  onClick={() => onToggleTag(d.name, d.country, 'wishlist')}
+                  onClick={() => onToggleTag(d, 'wishlist')}
                   title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                 >
                   {isWishlisted ? '♥' : '♡'}
