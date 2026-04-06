@@ -109,6 +109,7 @@ function Home() {
   const [personalizedChips, setPersonalizedChips] = useState<{ emoji: string; text: string }[] | null>(null);
   const [chipsPersonalized, setChipsPersonalized] = useState(false);
   const [chipsLoading, setChipsLoading] = useState(false);
+  const [chipsError, setChipsError] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -208,8 +209,13 @@ function Home() {
 
   const personalizeChips = async () => {
     const dnaString = buildDnaString();
-    if (!dnaString.trim()) return;
+    if (!dnaString.trim()) {
+      setDrawerTab('dna');
+      setDrawerOpen(true);
+      return;
+    }
     setChipsLoading(true);
+    setChipsError(false);
     try {
       const res = await fetch('/api/chips', {
         method: 'POST',
@@ -222,9 +228,18 @@ function Home() {
           sessionStorage.setItem('vt-chips-dna', JSON.stringify(data.chips));
           setPersonalizedChips(data.chips);
           setChipsPersonalized(true);
+        } else {
+          setChipsError(true);
+          setTimeout(() => setChipsError(false), 3000);
         }
+      } else {
+        setChipsError(true);
+        setTimeout(() => setChipsError(false), 3000);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setChipsError(true);
+      setTimeout(() => setChipsError(false), 3000);
+    }
     setChipsLoading(false);
   };
 
@@ -555,7 +570,7 @@ function Home() {
                           disabled={chipsLoading}
                           style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', opacity: chipsLoading ? 0.6 : 1 }}
                         >
-                          {chipsLoading ? '...' : dnaSaved ? '✦ Personalize' : '✦ Set DNA'}
+                          {chipsLoading ? '...' : chipsError ? '✗ Try again' : dnaSaved ? '✦ Personalize' : '✦ Set DNA'}
                         </button>
                       )}
                       <button
