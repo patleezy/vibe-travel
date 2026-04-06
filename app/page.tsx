@@ -204,6 +204,8 @@ function Home() {
       sessionStorage.removeItem('vt-chips-dna');
       setPersonalizedChips(null);
       setChipsPersonalized(false);
+      // Close drawer so user can act on the Personalize button
+      setDrawerOpen(false);
     } catch { /* ignore */ }
   };
 
@@ -674,6 +676,9 @@ function Home() {
         onSaveDna={saveDna}
         onClearDna={clearDna}
         dnaSaved={dnaSaved}
+        onPersonalizeChips={personalizeChips}
+        chipsPersonalized={chipsPersonalized}
+        chipsLoading={chipsLoading}
         pastVibesCount={pastVibes.length}
       />
     </>
