@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { normalizeCountry } from '@/lib/advisoryNormalize';
+import { sanitizeUserInput, checkRateLimit, checkContentLength, safeLogError } from '@/lib/security';
 import { Destination } from '@/types';
 
 // ─── Advisory cache (module-level, ~6h TTL) ─────────────────────────────────
@@ -166,6 +167,14 @@ function parseJson(text: string) {
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 10 requests per minute per IP
+  const rateLimitRes = checkRateLimit(req, 10, 60_000);
+  if (rateLimitRes) return rateLimitRes;
+
+  // Reject oversized payloads (max 8KB)
+  const sizeRes = checkContentLength(req, 8_192);
+  if (sizeRes) return sizeRes;
+
   try {
     const { vibe, travelerDna, pastVibes, visitedPlaces, wishlistedPlaces } = await req.json();
 
@@ -173,18 +182,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please describe your vibe.' }, { status: 400 });
     }
 
-    const cleanVibe = vibe.trim().slice(0, 500);
-    const cleanDna = travelerDna && typeof travelerDna === 'string' ? travelerDna.trim().slice(0, 400) : '';
+    // Sanitize all user inputs: strip control chars + prompt injection patterns
+    const cleanVibe = sanitizeUserInput(vibe, 500);
+    const cleanDna = travelerDna && typeof travelerDna === 'string'
+      ? sanitizeUserInput(travelerDna, 400)
+      : '';
     const cleanPastVibes: string[] = Array.isArray(pastVibes)
-      ? pastVibes.filter((v: unknown) => typeof v === 'string').slice(0, 3).map((v: string) => v.trim().slice(0, 120))
+      ? pastVibes.filter((v: unknown) => typeof v === 'string').slice(0, 3).map((v: string) => sanitizeUserInput(v, 120))
       : [];
 
     const cleanVisited: string[] = Array.isArray(visitedPlaces)
-      ? visitedPlaces.filter((v: unknown) => typeof v === 'string').slice(0, 20).map((v: string) => v.trim().slice(0, 80))
+      ? visitedPlaces.filter((v: unknown) => typeof v === 'string').slice(0, 20).map((v: string) => sanitizeUserInput(v, 80))
       : [];
 
     const cleanWishlisted: string[] = Array.isArray(wishlistedPlaces)
-      ? wishlistedPlaces.filter((v: unknown) => typeof v === 'string').slice(0, 20).map((v: string) => v.trim().slice(0, 80))
+      ? wishlistedPlaces.filter((v: unknown) => typeof v === 'string').slice(0, 20).map((v: string) => sanitizeUserInput(v, 80))
       : [];
 
     // STEP 1: Gemini plans searches
@@ -410,7 +422,7 @@ Fix these issues in your response. Be more surprising and specific.`,
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error('Vibe API error:', err);
+    safeLogError('discover', err);
     return NextResponse.json(
       { error: 'Something went wrong finding your destinations. Please try again.' },
       { status: 500 }
