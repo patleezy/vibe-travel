@@ -131,8 +131,34 @@ function parseJson(text: string) {
   try {
     return JSON.parse(clean);
   } catch {
+    // Try extracting the outermost JSON object
     const match = clean.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+    }
+    // Recovery: if JSON was truncated mid-response, try to extract whatever
+    // complete destination objects exist and build a valid partial response
+    try {
+      const destMatch = clean.match(/"destinations"\s*:\s*\[[\s\S]*/);
+      if (destMatch) {
+        const arrayStart = destMatch[0].indexOf('[');
+        const partial = destMatch[0].slice(arrayStart);
+        // Find all complete destination objects (those with a closing })
+        const objects: string[] = [];
+        let depth = 0, start = -1;
+        for (let i = 0; i < partial.length; i++) {
+          if (partial[i] === '{') { if (depth === 0) start = i; depth++; }
+          else if (partial[i] === '}') {
+            depth--;
+            if (depth === 0 && start !== -1) { objects.push(partial.slice(start, i + 1)); start = -1; }
+          }
+        }
+        if (objects.length > 0) {
+          const recovered = JSON.parse(`[${objects.join(',')}]`);
+          return { destinations: recovered, searchedFor: 'Your vibe destinations' };
+        }
+      }
+    } catch { /* give up */ }
     throw new Error('Failed to parse JSON response');
   }
 }
@@ -272,7 +298,7 @@ ${safetyContext}
 Return only valid JSON with exactly 3 destinations.`;
 
     // STEP 3: First synthesis pass
-    const synthesisText = await gemini(synthesisSystemPrompt, synthesisUserPrompt, 4000);
+    const synthesisText = await gemini(synthesisSystemPrompt, synthesisUserPrompt, 6000);
     let result = parseJson(synthesisText);
 
     // STEP 3b: Apply State Dept advisory data + climate context
@@ -374,7 +400,7 @@ IMPORTANT - A quality review flagged issues with a previous attempt:
 "${reflection.feedback}"
 
 Fix these issues in your response. Be more surprising and specific.`,
-          4000
+          6000
         );
         result = parseJson(retryText);
       }
