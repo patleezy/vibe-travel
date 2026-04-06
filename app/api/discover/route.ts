@@ -141,7 +141,7 @@ function parseJson(text: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { vibe, travelerDna, pastVibes } = await req.json();
+    const { vibe, travelerDna, pastVibes, visitedPlaces, wishlistedPlaces } = await req.json();
 
     if (!vibe || typeof vibe !== 'string' || vibe.trim().length < 3) {
       return NextResponse.json({ error: 'Please describe your vibe.' }, { status: 400 });
@@ -151,6 +151,14 @@ export async function POST(req: NextRequest) {
     const cleanDna = travelerDna && typeof travelerDna === 'string' ? travelerDna.trim().slice(0, 400) : '';
     const cleanPastVibes: string[] = Array.isArray(pastVibes)
       ? pastVibes.filter((v: unknown) => typeof v === 'string').slice(0, 3).map((v: string) => v.trim().slice(0, 120))
+      : [];
+
+    const cleanVisited: string[] = Array.isArray(visitedPlaces)
+      ? visitedPlaces.filter((v: unknown) => typeof v === 'string').slice(0, 20).map((v: string) => v.trim().slice(0, 80))
+      : [];
+
+    const cleanWishlisted: string[] = Array.isArray(wishlistedPlaces)
+      ? wishlistedPlaces.filter((v: unknown) => typeof v === 'string').slice(0, 20).map((v: string) => v.trim().slice(0, 80))
       : [];
 
     // STEP 1: Gemini plans searches
@@ -208,6 +216,14 @@ Rules:
       ? `\n\nPAST SEARCHES (prioritize variety — avoid recommending the same destinations as these trips):\n${cleanPastVibes.map((v, i) => `${i + 1}. "${v}"`).join('\n')}`
       : '';
 
+    const visitedContext = cleanVisited.length > 0
+      ? `\n\nPLACES ALREADY VISITED (do NOT recommend these or their immediate neighbors — user has been there):\n${cleanVisited.map((v, i) => `${i + 1}. ${v}`).join('\n')}`
+      : '';
+
+    const wishlistContext = cleanWishlisted.length > 0
+      ? `\n\nWISHLISTED PLACES (user is interested in these — bias toward similar vibes and regions, but don't repeat them exactly):\n${cleanWishlisted.map((v, i) => `${i + 1}. ${v}`).join('\n')}`
+      : '';
+
     const synthesisSystemPrompt = `You are Vibe, an honest and surprising travel guide. Synthesize research into exactly 3 destination recommendations.
 
 Return ONLY this JSON structure, nothing else:
@@ -245,7 +261,7 @@ Rules:
 - costSignal: budget = under $80/day, mid = $80-200/day, splurge = $200+/day
 - lat/lng: approximate decimal coordinates of the destination city center (not country capital unless they are the same)`;
 
-    const synthesisUserPrompt = `Traveler vibe: "${cleanVibe}"${dnaContext}${pastVibesContext}
+    const synthesisUserPrompt = `Traveler vibe: "${cleanVibe}"${dnaContext}${pastVibesContext}${visitedContext}${wishlistContext}
 
 === DESTINATION RESEARCH ===
 ${destinationContext}
