@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeUserInput, checkRateLimit, checkContentLength, safeLogError } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 personalizations per minute per IP
+  const rateLimitRes = checkRateLimit(req, 5, 60_000);
+  if (rateLimitRes) return rateLimitRes;
+
+  // Reject oversized payloads (max 2KB)
+  const sizeRes = checkContentLength(req, 2_048);
+  if (sizeRes) return sizeRes;
+
   try {
     const { travelerDna } = await req.json();
 
     if (!travelerDna || typeof travelerDna !== 'string' || travelerDna.trim().length < 5) {
       return NextResponse.json({ error: 'DNA profile required.' }, { status: 400 });
     }
+
+    const cleanDna = sanitizeUserInput(travelerDna, 400);
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -35,7 +46,7 @@ Rules:
 - Do NOT repeat themes across chips`
             }]
           },
-          contents: [{ role: 'user', parts: [{ text: `Traveler profile: "${travelerDna.trim().slice(0, 400)}"` }] }],
+          contents: [{ role: 'user', parts: [{ text: `Traveler profile: "${cleanDna}"` }] }],
           generationConfig: {
             maxOutputTokens: 600,
             temperature: 0.9,
@@ -56,7 +67,7 @@ Rules:
 
     return NextResponse.json(parsed);
   } catch (err) {
-    console.error('Chips API error:', err);
+    safeLogError('chips', err);
     return NextResponse.json({ error: 'Failed to generate chips.' }, { status: 500 });
   }
 }
