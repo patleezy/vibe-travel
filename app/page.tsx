@@ -554,42 +554,54 @@ function Home() {
                   <Shuffle size={12} /> Surprise me
                 </button>
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="fade-up stagger-3">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <p className="vt-chips-label" style={{ margin: 0 }}>
-                      {chipsPersonalized ? '✦ For you' : 'Or try a vibe'}
-                    </p>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {!chipsPersonalized && (
-                        <button
-                          onClick={() => {
-                            if (dnaSaved) {
-                              personalizeChips();
-                            } else {
-                              setDrawerTab('dna');
-                              setDrawerOpen(true);
-                            }
-                          }}
-                          disabled={chipsLoading}
-                          style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', opacity: chipsLoading ? 0.6 : 1 }}
-                        >
-                          {chipsLoading ? '...' : chipsError ? '✗ Try again' : dnaSaved ? '✦ Personalize' : '✦ Set DNA'}
-                        </button>
-                      )}
-                      <button
-                        onClick={reshuffleChips}
-                        title="Shuffle chips"
-                        style={{ fontSize: 11, padding: '3px 8px', borderRadius: 100, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer' }}
-                      >
-                        ↺
-                      </button>
+                  {personalizedChips && personalizedChips.length > 0 && (
+                    <div className="vt-chips-foryou">
+                      <p className="vt-chips-label" style={{ margin: '0 0 10px 0' }}>✦ For you</p>
+                      <div className="vt-chips">
+                        {personalizedChips.map(chip => (
+                          <button key={chip.text} className="vt-chip" onClick={() => handleChip(chip.text)}>
+                            <span>{chip.emoji}</span>{chip.text}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="vt-chips">
-                    {(personalizedChips ?? visibleChips).map(chip => (
-                      <button key={chip.text} className="vt-chip" onClick={() => handleChip(chip.text)}>
-                        <span>{chip.emoji}</span>{chip.text}
-                      </button>
-                    ))}
+                  )}
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <p className="vt-chips-label" style={{ margin: 0 }}>Or try a vibe</p>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {!chipsPersonalized && (
+                          <button
+                            onClick={() => {
+                              if (dnaSaved) {
+                                personalizeChips();
+                              } else {
+                                setDrawerTab('dna');
+                                setDrawerOpen(true);
+                              }
+                            }}
+                            disabled={chipsLoading}
+                            style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', opacity: chipsLoading ? 0.6 : 1 }}
+                          >
+                            {chipsLoading ? '...' : chipsError ? '✗ Try again' : dnaSaved ? '✦ Personalize' : '✦ Set DNA'}
+                          </button>
+                        )}
+                        <button
+                          onClick={reshuffleChips}
+                          title="Shuffle chips"
+                          style={{ fontSize: 11, padding: '3px 8px', borderRadius: 100, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer' }}
+                        >
+                          ↺
+                        </button>
+                      </div>
+                    </div>
+                    <div className="vt-chips">
+                      {visibleChips.map(chip => (
+                        <button key={chip.text} className="vt-chip" onClick={() => handleChip(chip.text)}>
+                          <span>{chip.emoji}</span>{chip.text}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </>

@@ -33,23 +33,25 @@ Return ONLY this JSON structure, nothing else:
 {
   "chips": [
     { "emoji": "🏔️", "text": "A quiet mountain lodge with good bourbon" },
-    ...
+    { "emoji": "🌊", "text": "Rainy coastal town for writing a novel" },
+    { "emoji": "🍜", "text": "Neon city with incredible street food" },
+    { "emoji": "🏛️", "text": "Ancient ruins with almost no tourists" }
   ]
 }
 
 Rules:
-- Return EXACTLY 10 chips
+- Return EXACTLY 4 chips
 - Each chip: one emoji + one evocative sentence (max 10 words) describing a travel feeling or scenario
 - Tailor all chips to the traveler's profile — their type, what they seek, what they avoid
 - Be specific and surprising, not generic (avoid "beach vacation" or "city trip")
-- Vary the settings: mix urban, rural, remote, cultural, culinary, adventure, slow travel
+- Vary the settings across the 4 chips
 - Do NOT repeat themes across chips`
             }]
           },
           contents: [{ role: 'user', parts: [{ text: `Traveler profile: "${cleanDna}"` }] }],
           generationConfig: {
-            maxOutputTokens: 1200,
-            temperature: 0.9,
+            maxOutputTokens: 500,
+            temperature: 0.7,
             responseMimeType: 'application/json',
           },
         }),

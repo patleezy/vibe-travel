@@ -711,6 +711,12 @@ html:not(.dark) .vt-drawer-where-next { color: var(--accent); }
   letter-spacing: 0.02em; line-height: 1.5;
 }
 
+.vt-chips-foryou {
+  width: 100%; margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
 .vt-drawer-personalize-btn {
   width: 100%; margin-top: 12px; padding: 10px 16px;
   background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(37,99,235,0.1));
