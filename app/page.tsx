@@ -156,8 +156,9 @@ function Home() {
     } catch {
       setVisibleChips(VIBE_CHIPS_POOL.slice(0, 10));
     }
+  }, []);
 
-      useEffect(() => {
+  useEffect(() => {
     const ta = textareaRef.current;
     if (ta) { ta.style.height = 'auto'; ta.style.height = `${ta.scrollHeight}px`; }
   }, [vibe]);
