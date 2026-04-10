@@ -38,9 +38,6 @@ interface DrawerProps {
   onSaveDna: () => void;
   onClearDna: () => void;
   dnaSaved: boolean;
-  onPersonalizeChips: () => void;
-  chipsPersonalized: boolean;
-  chipsLoading: boolean;
   pastVibesCount: number;
 }
 
@@ -157,15 +154,12 @@ function VisitedTab({ entries, onRemove, onWhereNext }: {
   );
 }
 
-function DnaTab({ dnaProfile, onDnaChange, onSaveDna, onClearDna, dnaSaved, onPersonalizeChips, chipsPersonalized, chipsLoading }: {
+function DnaTab({ dnaProfile, onDnaChange, onSaveDna, onClearDna, dnaSaved }: {
   dnaProfile: { travelerType: string; alwaysSeek: string; ruinsTrip: string; extraContext: string };
   onDnaChange: (field: string, value: string) => void;
   onSaveDna: () => void;
   onClearDna: () => void;
   dnaSaved: boolean;
-  onPersonalizeChips: () => void;
-  chipsPersonalized: boolean;
-  chipsLoading: boolean;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -191,13 +185,7 @@ function DnaTab({ dnaProfile, onDnaChange, onSaveDna, onClearDna, dnaSaved, onPe
         </button>
       </div>
       {dnaSaved && (
-        <button
-          className="vt-drawer-personalize-btn"
-          onClick={onPersonalizeChips}
-          disabled={chipsLoading}
-        >
-          {chipsLoading ? '...' : chipsPersonalized ? '✦ Chips personalized ✓' : '✦ Personalize my chips'}
-        </button>
+        
       )}
     </div>
   );
@@ -219,9 +207,6 @@ export default function Drawer({
   onSaveDna,
   onClearDna,
   dnaSaved,
-  onPersonalizeChips,
-  chipsPersonalized,
-  chipsLoading,
   pastVibesCount,
 }: DrawerProps) {
   const [activeTab, setActiveTab] = useState<DrawerTab>(initialTab);
@@ -295,9 +280,6 @@ export default function Drawer({
               onSaveDna={onSaveDna}
               onClearDna={onClearDna}
               dnaSaved={dnaSaved}
-              onPersonalizeChips={onPersonalizeChips}
-              chipsPersonalized={chipsPersonalized}
-              chipsLoading={chipsLoading}
             />
           )}
         </div>

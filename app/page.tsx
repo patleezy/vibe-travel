@@ -106,10 +106,6 @@ function Home() {
 
   // Vibe chips — 10 shown at a time, rotating per session, personalizable
   const [visibleChips, setVisibleChips] = useState<{ emoji: string; text: string }[]>([]);
-  const [personalizedChips, setPersonalizedChips] = useState<{ emoji: string; text: string }[] | null>(null);
-  const [chipsPersonalized, setChipsPersonalized] = useState(false);
-  const [chipsLoading, setChipsLoading] = useState(false);
-  const [chipsError, setChipsError] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -161,17 +157,7 @@ function Home() {
       setVisibleChips(VIBE_CHIPS_POOL.slice(0, 10));
     }
 
-    // Personalized chips: load from sessionStorage if previously generated
-    try {
-      const cached = sessionStorage.getItem('vt-chips-dna');
-      if (cached) {
-        setPersonalizedChips(JSON.parse(cached));
-        setChipsPersonalized(true);
-      }
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
+      useEffect(() => {
     const ta = textareaRef.current;
     if (ta) { ta.style.height = 'auto'; ta.style.height = `${ta.scrollHeight}px`; }
   }, [vibe]);
@@ -200,58 +186,18 @@ function Home() {
       localStorage.setItem('vt-dna', JSON.stringify(dnaProfile));
       const hasContent = Object.values(dnaProfile).some((v) => (v as string).trim());
       setDnaSaved(hasContent);
-      // Clear cached personalized chips so they regenerate with new profile
       sessionStorage.removeItem('vt-chips-dna');
-      setPersonalizedChips(null);
-      setChipsPersonalized(false);
-      // Close drawer so user can act on the Personalize button
       setDrawerOpen(false);
     } catch { /* ignore */ }
   };
 
-  const personalizeChips = async () => {
-    const dnaString = buildDnaString();
-    if (!dnaString.trim()) {
-      setDrawerTab('dna');
-      setDrawerOpen(true);
-      return;
-    }
-    setChipsLoading(true);
-    setChipsError(false);
-    try {
-      const res = await fetch('/api/chips', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ travelerDna: dnaString }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.chips?.length) {
-          sessionStorage.setItem('vt-chips-dna', JSON.stringify(data.chips));
-          setPersonalizedChips(data.chips);
-          setChipsPersonalized(true);
-        } else {
-          setChipsError(true);
-          setTimeout(() => setChipsError(false), 3000);
-        }
-      } else {
-        setChipsError(true);
-        setTimeout(() => setChipsError(false), 3000);
-      }
-    } catch {
-      setChipsError(true);
-      setTimeout(() => setChipsError(false), 3000);
-    }
-    setChipsLoading(false);
-  };
+
 
   const reshuffleChips = () => {
     try {
       const shuffled = [...VIBE_CHIPS_POOL].sort(() => Math.random() - 0.5).slice(0, 10);
       sessionStorage.setItem('vt-chips-session', JSON.stringify(shuffled));
       setVisibleChips(shuffled);
-      setPersonalizedChips(null);
-      setChipsPersonalized(false);
     } catch { /* ignore */ }
   };
 
@@ -554,38 +500,12 @@ function Home() {
                   <Shuffle size={12} /> Surprise me
                 </button>
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="fade-up stagger-3">
-                  {personalizedChips && personalizedChips.length > 0 && (
-                    <div className="vt-chips-foryou">
-                      <p className="vt-chips-label" style={{ margin: '0 0 10px 0' }}>✦ For you</p>
-                      <div className="vt-chips">
-                        {personalizedChips.map(chip => (
-                          <button key={chip.text} className="vt-chip" onClick={() => handleChip(chip.text)}>
-                            <span>{chip.emoji}</span>{chip.text}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
                       <p className="vt-chips-label" style={{ margin: 0 }}>Or try a vibe</p>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        {!chipsPersonalized && (
-                          <button
-                            onClick={() => {
-                              if (dnaSaved) {
-                                personalizeChips();
-                              } else {
-                                setDrawerTab('dna');
-                                setDrawerOpen(true);
-                              }
-                            }}
-                            disabled={chipsLoading}
-                            style={{ fontSize: 11, padding: '3px 9px', borderRadius: 100, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', opacity: chipsLoading ? 0.6 : 1 }}
-                          >
-                            {chipsLoading ? '...' : chipsError ? '✗ Try again' : dnaSaved ? '✦ Personalize' : '✦ Set DNA'}
-                          </button>
-                        )}
+
                         <button
                           onClick={reshuffleChips}
                           title="Shuffle chips"
@@ -688,9 +608,6 @@ function Home() {
         onSaveDna={saveDna}
         onClearDna={clearDna}
         dnaSaved={dnaSaved}
-        onPersonalizeChips={personalizeChips}
-        chipsPersonalized={chipsPersonalized}
-        chipsLoading={chipsLoading}
         pastVibesCount={pastVibes.length}
       />
     </>
