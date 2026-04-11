@@ -263,6 +263,19 @@ html:not(.dark) .vt-surprise {
   border-color: var(--accent-light); color: var(--accent-light);
   background: rgba(124,58,237,0.07); transform: translateY(-1px);
 }
+.vt-dna-open-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 100px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-dim); cursor: pointer;
+  font-family: 'Geist', inherit; font-size: 11px; font-weight: 500;
+  letter-spacing: 0.02em; transition: all 0.15s ease;
+}
+.vt-dna-open-btn:hover { border-color: var(--accent-light); color: var(--accent-light); }
+.vt-dna-open-btn.active {
+  border-color: rgba(124,58,237,0.45); color: var(--accent-light);
+  background: rgba(124,58,237,0.07);
+}
 .vt-recent-label {
   font-size: 10px; font-weight: 600;
   letter-spacing: 0.18em; text-transform: uppercase;
@@ -432,6 +445,10 @@ html:not(.dark) .vt-tag-btn.active-wish {
   display: inline-block; width: 3px; height: 3px; border-radius: 50%;
   background: var(--accent-light); opacity: 0.4; margin: 0 8px; vertical-align: middle;
 }
+.vt-footer-coffee {
+  color: inherit; text-decoration: none; transition: color 0.15s ease;
+}
+.vt-footer-coffee:hover { color: var(--accent-light); }
 .vt-divider { width: 28px; height: 1px; background: var(--border); margin: 0 auto 18px; }
 
 /* Travel DNA */
