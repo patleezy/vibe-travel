@@ -492,6 +492,12 @@ function Home() {
                     onClick={() => setBudget(budget === b.value ? '' : b.value)}>{b.label}</button>
                 ))}
               </div>
+              <button
+                className={`vt-dna-open-btn${dnaSaved ? ' active' : ''}`}
+                onClick={() => { setDrawerTab('dna'); setDrawerOpen(true); }}
+              >
+                🧬 {dnaSaved ? 'Travel DNA · active' : 'Set your travel DNA'}
+              </button>
             </div>
 
             {/* Surprise me + chips — only before first search */}
@@ -590,6 +596,10 @@ function Home() {
           Live web research
           <span className="vt-dot" />
           Real-time safety signals
+          <span className="vt-dot" />
+          <a href="https://buymeacoffee.com/patleezy" target="_blank" rel="noopener noreferrer" className="vt-footer-coffee">
+            ☕ treat us to a coffee
+          </a>
         </footer>
       </main>
 
