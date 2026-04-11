@@ -184,9 +184,6 @@ function DnaTab({ dnaProfile, onDnaChange, onSaveDna, onClearDna, dnaSaved }: {
           <Sparkles size={11} /> Save DNA
         </button>
       </div>
-      {dnaSaved && (
-        
-      )}
     </div>
   );
 }
