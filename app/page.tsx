@@ -590,16 +590,30 @@ function Home() {
           </section>
         )}
 
+        <div style={{ padding: '48px 20px 0' }}>
+          <div className="vt-coffee-card">
+            <p className="vt-coffee-title">☕ Keep the Vibes Going</p>
+            <p className="vt-coffee-body">
+              Vibe Travel runs live AI searches on every query — no cached results.
+              If it&apos;s sparked your next adventure, a coffee helps keep it running.
+            </p>
+            <a
+              href="https://buymeacoffee.com/patleezy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="vt-coffee-btn"
+            >
+              Treat us to a coffee ☕
+            </a>
+          </div>
+        </div>
+
         <footer className="vt-footer">
           Vibe Travel
           <span className="vt-dot" />
           Live web research
           <span className="vt-dot" />
           Real-time safety signals
-          <span className="vt-dot" />
-          <a href="https://buymeacoffee.com/patleezy" target="_blank" rel="noopener noreferrer" className="vt-footer-coffee">
-            ☕ treat us to a coffee
-          </a>
         </footer>
       </main>
 
