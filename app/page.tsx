@@ -31,6 +31,16 @@ const VIBE_CHIPS_POOL = [
   { emoji: '🌁', text: 'A foggy peninsula at the edge of a continent' },
   { emoji: '🍄', text: 'Deep forest with foraging trails and wooden guesthouses' },
   { emoji: '🏙️', text: 'A megacity with a neighborhood nobody talks about' },
+  { emoji: '⛵', text: 'Island-hop by ferry with no fixed itinerary' },
+  { emoji: '🕌', text: 'A desert city with a medina you can get lost in for hours' },
+  { emoji: '🎭', text: 'A baroque city where everyone dresses up on Sundays' },
+  { emoji: '🌾', text: 'Countryside known for one very specific, very good thing to eat' },
+  { emoji: '🧊', text: 'Far north in winter — dark by 3pm, sauna by 5pm' },
+  { emoji: '🏝️', text: 'An island small enough to walk around in a day' },
+  { emoji: '🪨', text: 'Volcanic landscape with nothing soft about it' },
+  { emoji: '🎪', text: 'A city that invented a strange annual festival and takes it seriously' },
+  { emoji: '🌺', text: 'Tropical valley, one road in, one road out' },
+  { emoji: '🛤️', text: 'End of the line — the train literally goes no further' },
 ];
 
 function relativeDate(ts?: number): string {

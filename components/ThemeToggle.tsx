@@ -16,8 +16,12 @@ export default function ThemeToggle() {
   const toggle = () => {
     const next = !dark;
     setDark(next);
+    document.documentElement.classList.add('theme-transitioning');
     document.documentElement.classList.toggle('dark', next);
     localStorage.setItem('vibe-theme', next ? 'dark' : 'light');
+    setTimeout(() => {
+      document.documentElement.classList.remove('theme-transitioning');
+    }, 250);
   };
 
   return (
