@@ -423,6 +423,13 @@ Fix these issues in your response. Be more surprising and specific.`,
     return NextResponse.json(result);
   } catch (err) {
     safeLogError('discover', err);
+    const msg = (err as Error).message ?? '';
+    if (msg.includes('503') || msg.includes('UNAVAILABLE')) {
+      return NextResponse.json(
+        { error: 'The AI is under high demand right now. Wait a moment and try again.' },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: 'Something went wrong finding your destinations. Please try again.' },
       { status: 500 }
