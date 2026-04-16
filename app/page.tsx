@@ -554,6 +554,12 @@ function Home() {
             {error && (
               <div style={{ padding: '18px 22px', background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.15)', borderRadius: 14, color: '#f87171', fontSize: 14, textAlign: 'center' }}>
                 {error}
+                <button
+                  onClick={() => discover()}
+                  style={{ marginTop: 12, display: 'block', marginLeft: 'auto', marginRight: 'auto', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 8, color: '#f87171', fontSize: 13, padding: '7px 18px', cursor: 'pointer' }}
+                >
+                  Try again
+                </button>
               </div>
             )}
 
