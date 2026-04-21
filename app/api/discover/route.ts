@@ -278,7 +278,7 @@ Return ONLY this JSON structure, nothing else:
       "safetyStatus": "green",
       "safetyNote": "1 sentence on current safety or advisories",
       "costSignal": "budget",
-      "vibeEmoji": "2-3 emojis",
+      "vibeEmoji": "2-3 emoji characters only — no words or text",
       "region": "e.g. Southeast Asia",
       "lat": 48.8566,
       "lng": 2.3522
@@ -297,7 +297,8 @@ Rules:
 - Be honest about safety - mark red/yellow if real warnings exist
 - Prioritize surprising, non-obvious choices
 - costSignal: budget = under $80/day, mid = $80-200/day, splurge = $200+/day
-- lat/lng: approximate decimal coordinates of the destination city center (not country capital unless they are the same)`;
+- lat/lng: approximate decimal coordinates of the destination city center (not country capital unless they are the same)
+- vibeEmoji must contain only Unicode emoji characters, never words or Latin text`;
 
     const synthesisUserPrompt = `Traveler vibe: "${cleanVibe}"${dnaContext}${pastVibesContext}${visitedContext}${wishlistContext}
 
