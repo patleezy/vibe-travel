@@ -3,6 +3,11 @@ import { Destination, DestinationTags, DestinationTag } from '@/types';
 import { Users, Calendar, Wallet, ShieldCheck, ShieldAlert, ShieldX, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
+function extractEmojis(str: string): string {
+  // Strip ASCII (letters, spaces, punctuation) — leaves only Unicode emoji chars
+  return str.replace(/[\x00-\x7F]/g, '').trim();
+}
+
 const CROWD_LABELS = { low: 'Off the beaten path', medium: 'Moderate crowds', high: 'Popular destination' };
 const COST_LABELS = { budget: 'Budget-friendly', mid: 'Mid-range', splurge: 'Splurge-worthy' };
 const COST_ICONS = { budget: '$', mid: '$$', splurge: '$$$' };
@@ -29,6 +34,7 @@ export default function DestinationCard({ destination: d, index, tags, onToggleT
   const currentEntry = tags?.[tagKey];
   const isVisited = currentEntry?.tag === 'visited';
   const isWishlisted = currentEntry?.tag === 'wishlist';
+  const cleanEmoji = extractEmojis(d.vibeEmoji);
 
   return (
     <article
@@ -58,7 +64,7 @@ export default function DestinationCard({ destination: d, index, tags, onToggleT
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 22 }}>{d.vibeEmoji}</span>
+              {cleanEmoji && <span style={{ fontSize: 22 }}>{cleanEmoji}</span>}
               <span style={{ fontSize: 12, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500 }}>
                 {d.region}
               </span>
