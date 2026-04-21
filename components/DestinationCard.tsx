@@ -4,7 +4,8 @@ import { Users, Calendar, Wallet, ShieldCheck, ShieldAlert, ShieldX, ChevronDown
 import { useState } from 'react';
 
 function extractEmojis(str: string): string {
-  return (str.match(/\p{Extended_Pictographic}[️⃣‍\p{Extended_Pictographic}]*/gu) ?? []).join('');
+  // Strip ASCII (letters, spaces, punctuation) — leaves only Unicode emoji chars
+  return str.replace(/[\x00-\x7F]/g, '').trim();
 }
 
 const CROWD_LABELS = { low: 'Off the beaten path', medium: 'Moderate crowds', high: 'Popular destination' };
